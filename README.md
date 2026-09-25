@@ -39,6 +39,10 @@ Each app sends a log every 3 seconds for 2 minutes, then stops.
    - `dotnet-log-producer` → index `dotnet-log-producer`
    - `python-log-producer` → index `python-log-producer`
    - any other name → index `unrouted`
+
+   This is done by the [routing connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.161.0/connector/routingconnector),
+   and the logs are written by the [OpenSearch exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.161.0/exporter/opensearchexporter).
+   Both come with the `otel/opentelemetry-collector-contrib:0.161.0` image, and both are marked *alpha* for logs.
 3. **The init job** ([opensearch/init.sh](opensearch/init.sh)) runs once at startup, before any log is sent. It creates the indices
    and the Dashboards index patterns.
 
