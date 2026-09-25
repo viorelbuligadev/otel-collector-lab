@@ -3,11 +3,7 @@
 Two small apps (.NET and Python) send logs to an **OpenTelemetry Collector**.
 The Collector stores each app's logs in its own **OpenSearch** index. You browse them in **OpenSearch Dashboards**.
 
-```
-.NET app   ─┐                     ┌─► index dotnet-log-producer
-            ├─► OTel Collector ───┼─► index python-log-producer
-Python app ─┘                     └─► index unrouted   (any other app)
-```
+![.NET and Python apps send logs to the OTel Collector, which routes them into three indices in one OpenSearch: dotnet-log-producer, python-log-producer and unrouted. OpenSearch Dashboards reads from OpenSearch. Everything runs in Docker.](docs/architecture.png)
 
 ## Run it
 
@@ -64,6 +60,7 @@ Startup order: OpenSearch → Dashboards → init job → Collector → apps.
 | `opensearch/index-template-log-producers.json` | Field types and settings for the indices |
 | `LogProducer/` | .NET app |
 | `LogProducerPython/` | Python app |
+| `docs/` | Architecture image |
 
 ## Notes
 
