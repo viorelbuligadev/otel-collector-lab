@@ -1,0 +1,70 @@
+{
+  "index_patterns": ["*-log-producer", "unrouted"],
+  "priority": 100,
+  "_meta": {
+    "description": "Logs written by the OTel Collector's opensearch exporter into one index per app, named after its service.name (e.g. dotnet-log-producer)"
+  },
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "refresh_interval": "5s"
+    },
+    "mappings": {
+      "dynamic_templates": [
+        {
+          "strings_as_keyword": {
+            "match_mapping_type": "string",
+            "mapping": { "type": "keyword", "ignore_above": 1024 }
+          }
+        }
+      ],
+      "properties": {
+        "@timestamp":        { "type": "date_nanos" },
+        "observedTimestamp": { "type": "date_nanos" },
+        "body": {
+          "type": "text",
+          "fields": { "keyword": { "type": "keyword", "ignore_above": 1024 } }
+        },
+        "severity": {
+          "properties": {
+            "text":   { "type": "keyword" },
+            "number": { "type": "integer" }
+          }
+        },
+        "traceId": { "type": "keyword" },
+        "spanId":  { "type": "keyword" },
+        "instrumentationScope": {
+          "properties": {
+            "name":    { "type": "keyword" },
+            "version": { "type": "keyword" }
+          }
+        },
+        "resource": {
+          "properties": {
+            "service": {
+              "properties": {
+                "name":        { "type": "keyword" },
+                "version":     { "type": "keyword" },
+                "instance.id": { "type": "keyword" }
+              }
+            },
+            "deployment.environment": { "type": "keyword" }
+          }
+        },
+        "attributes": {
+          "properties": {
+            "exception": {
+              "properties": {
+                "type":       { "type": "keyword" },
+                "message":    { "type": "text", "fields": { "keyword": { "type": "keyword", "ignore_above": 1024 } } },
+                "stacktrace": { "type": "text" }
+              }
+            },
+            "Amount": { "type": "double" }
+          }
+        }
+      }
+    }
+  }
+}

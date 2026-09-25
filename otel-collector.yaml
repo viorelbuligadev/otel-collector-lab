@@ -1,0 +1,80 @@
+# OpenTelemetry Collector config: receive logs over OTLP, route each app's logs to its own
+# OpenSearch index using an explicit routing table. Only the destinations listed here can be written to.
+#
+#                                  ┌─ service.name == dotnet-log-producer ─► logs/dotnet   ─► index dotnet-log-producer
+#   otlp ─► logs/in ─► routing ────┼─ service.name == python-log-producer ─► logs/python   ─► index python-log-producer
+#                                  └─ anything else (default)            ─► logs/unrouted ─► index unrouted
+#
+# The indices are created upfront (with the index template) by the opensearch-init job in docker-compose.yml.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317   # 0.0.0.0, not localhost, so it's reachable from outside the container
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:                # always first: refuses data instead of crashing when memory is tight
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  batch:                         # always last: groups records into fewer, larger requests
+    timeout: 1s
+
+connectors:
+  # A connector is the exporter of one pipeline and the receiver of others.
+  # This one sends each batch to the pipeline whose condition matches its service.name.
+  routing:
+    default_pipelines: [logs/unrouted]          # unknown or misspelled services are kept, not dropped
+    table:
+      - condition: resource.attributes["service.name"] == "dotnet-log-producer"
+        pipelines: [logs/dotnet]
+      - condition: resource.attributes["service.name"] == "python-log-producer"
+        pipelines: [logs/python]
+
+exporters:
+  # One exporter per destination index, each with a fixed name.
+  # The shared settings are repeated on purpose, so each block reads on its own.
+  opensearch/dotnet:
+    http:
+      endpoint: http://opensearch:9200         # service name on the compose network
+    logs_index: dotnet-log-producer
+    retry_on_failure: { enabled: true }
+    sending_queue: { enabled: true }
+
+  opensearch/python:
+    http:
+      endpoint: http://opensearch:9200
+    logs_index: python-log-producer
+    retry_on_failure: { enabled: true }
+    sending_queue: { enabled: true }
+
+  opensearch/unrouted:
+    http:
+      endpoint: http://opensearch:9200
+    logs_index: unrouted
+    retry_on_failure: { enabled: true }
+    sending_queue: { enabled: true }
+
+extensions:
+  health_check:                  # http://localhost:13133 -> is the collector up?
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    logs/in:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [routing]
+    logs/dotnet:
+      receivers: [routing]
+      exporters: [opensearch/dotnet]
+    logs/python:
+      receivers: [routing]
+      exporters: [opensearch/python]
+    logs/unrouted:
+      receivers: [routing]
+      exporters: [opensearch/unrouted]

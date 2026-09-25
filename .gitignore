@@ -1,0 +1,18 @@
+# .NET build output
+bin/
+obj/
+
+# Python
+__pycache__/
+.venv/
+venv/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+
+# Local secrets / overrides, never commit
+.env
+docker-compose.override.yml

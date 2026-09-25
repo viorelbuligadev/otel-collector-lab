@@ -1,0 +1,11 @@
+# Files that run or are read inside Linux containers must keep LF line endings,
+# even when cloned on Windows with core.autocrlf=true. A CRLF init.sh fails in the container,
+# and then the indices are never created.
+*.sh              text eol=lf
+*.py              text eol=lf
+*.yml             text eol=lf
+*.yaml            text eol=lf
+*.json            text eol=lf
+Dockerfile        text eol=lf
+.dockerignore     text eol=lf
+requirements.txt  text eol=lf
